@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browse Inventory | ReForm Furniture</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sage: '#6D7B58', 'sage-dk': '#4E5940', 'sage-lt': '#8A9970',
+            ink: '#1E2118', coal: '#2A2C26', mid: '#5A5D52',
+            cream: '#F8F5F0', sand: '#EDE7DB',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    };
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #F8F5F0;
+      color: #2A2C26;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.028; pointer-events: none; z-index: 9999;
+    }
+
+    .font-display { font-family: 'Playfair Display', Georgia, serif; }
+
+    .sticky-nav {
+      position: sticky; top: 0; z-index: 100;
+      background: #ffffff;
+      border-bottom: 1px solid rgba(42,44,38,0.08);
+    }
+
+    .btn-quote {
+      display: inline-flex; align-items: center;
+      background: #6D7B58; color: #fff;
+      padding: 0.6rem 1.35rem; border-radius: 6px;
+      font-size: 0.82rem; font-weight: 500; letter-spacing: 0.03em;
+      border: none; cursor: pointer; text-decoration: none; white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(109,123,88,0.22);
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .btn-quote:hover { background: #4E5940; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(109,123,88,0.3); }
+    .btn-quote:active { transform: translateY(0); }
+    .btn-quote:focus-visible { outline: 2px solid #6D7B58; outline-offset: 3px; }
+
+    .nav-link {
+      position: relative;
+      font-size: 1rem; font-weight: 500; color: #5A5D52;
+      text-decoration: none; transition: color 0.2s ease;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute; bottom: -3px; left: 0; right: 100%;
+      height: 1.5px; background: #6D7B58;
+      transition: right 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .nav-link:hover { color: #6D7B58; }
+    .nav-link:hover::after { right: 0; }
+    .nav-link.nav-current { color: #6D7B58; }
+    .nav-link.nav-current::after { right: 0; }
+    .nav-link:focus-visible { outline: 2px solid #6D7B58; outline-offset: 4px; border-radius: 2px; }
+
+    /* Category filter */
+    .cat-filter {
+      display: inline-flex; align-items: center;
+      padding: 0.45rem 1.1rem; border-radius: 6px;
+      font-size: 0.875rem; font-weight: 500; color: #5A5D52;
+      background: transparent; border: 1.5px solid transparent;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+    .cat-filter:hover { background: rgba(109,123,88,0.08); color: #2A2C26; }
+    .cat-filter.active { background: #6D7B58; color: #fff; }
+    .cat-filter:focus-visible { outline: 2px solid #6D7B58; outline-offset: 2px; border-radius: 6px; }
+
+    .cat-scroll::-webkit-scrollbar { display: none; }
+    .cat-scroll { scrollbar-width: none; }
+
+    /* Product cards */
+    .inv-card {
+      background: #fff; border-radius: 14px; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(30,33,24,0.06), 0 4px 14px rgba(30,33,24,0.04);
+      transition: transform 0.22s cubic-bezier(0.34,1.2,0.64,1), box-shadow 0.22s ease;
+    }
+    .inv-card:hover { transform: translateY(-4px); box-shadow: 0 6px 28px rgba(30,33,24,0.1), 0 2px 6px rgba(30,33,24,0.06); }
+    .inv-card:focus-visible { outline: 2px solid #6D7B58; outline-offset: 3px; }
+
+    .inv-card-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; transition: transform 0.5s cubic-bezier(0.34,1.2,0.64,1); }
+    .inv-card:hover .inv-card-img { transform: scale(1.03); }
+
+    /* Condition labels */
+    .cond-Excellent  { background: rgba(109,123,88,0.12); color: #4E5940; }
+    .cond-Very-Good  { background: rgba(160,140,80,0.12); color: #7a6a30; }
+    .cond-Good       { background: rgba(90,93,82,0.1);   color: #5A5D52; }
+
+    /* Buttons */
+    .btn-sage {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: #6D7B58; color: #fff;
+      padding: 0.62rem 1.35rem; border-radius: 6px;
+      font-size: 0.82rem; font-weight: 500; letter-spacing: 0.02em;
+      border: none; cursor: pointer; text-decoration: none;
+      box-shadow: 0 1px 4px rgba(109,123,88,0.22);
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .btn-sage:hover  { background: #4E5940; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(109,123,88,0.3); }
+    .btn-sage:active { transform: translateY(0); }
+    .btn-sage:focus-visible { outline: 2px solid #6D7B58; outline-offset: 3px; }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: transparent; color: #5A5D52;
+      padding: 0.62rem 1.1rem; border-radius: 6px;
+      font-size: 0.82rem; font-weight: 500;
+      border: 1.5px solid rgba(42,44,38,0.16); cursor: pointer; text-decoration: none;
+      transition: border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+    }
+    .btn-ghost:hover  { border-color: #6D7B58; color: #6D7B58; transform: translateY(-1px); }
+    .btn-ghost:active { transform: translateY(0); }
+    .btn-ghost:focus-visible { outline: 2px solid #6D7B58; outline-offset: 3px; }
+
+    .eyebrow { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #6D7B58; }
+    .sage-rule { width: 48px; height: 2px; background: #6D7B58; border-radius: 1px; }
+
+    /* Form fields (dark bg) */
+    .field {
+      width: 100%; padding: 0.8rem 1rem;
+      border: 1.5px solid rgba(255,255,255,0.12); border-radius: 6px;
+      font-size: 0.875rem; font-family: inherit;
+      background: rgba(255,255,255,0.06); color: #fff;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      outline: none; resize: vertical;
+    }
+    .field::placeholder { color: rgba(255,255,255,0.3); }
+    .field:focus { border-color: rgba(109,123,88,0.65); background: rgba(255,255,255,0.09); }
+
+    /* Modal overlay */
+    .modal-bg {
+      position: fixed; inset: 0;
+      background: rgba(20,22,18,0.74);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .detail-panel {
+      position: relative;
+      background: #fff; border-radius: 18px; overflow: hidden;
+      width: 100%; max-width: 940px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(20,22,18,0.3), 0 8px 20px rgba(20,22,18,0.15);
+    }
+
+    .quote-panel {
+      background: #1E2118; border-radius: 18px; overflow: hidden;
+      width: 100%; max-width: 500px;
+      max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(20,22,18,0.5);
+    }
+
+    /* Reveal */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.55s cubic-bezier(0.34,1.2,0.64,1), transform 0.55s cubic-bezier(0.34,1.2,0.64,1); }
+    .reveal.vis { opacity: 1; transform: translateY(0); }
+    .d1 { transition-delay: 0.07s; }
+    .d2 { transition-delay: 0.14s; }
+
+    #mob { display: none; }
+    #mob.open { display: block; }
+
+    @media (max-width: 700px) {
+      .detail-two-col { flex-direction: column !important; }
+      .detail-img-col { width: 100% !important; min-height: 220px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ════ NAV ════ -->
+<nav class="sticky-nav">
+  <div style="padding:0.2rem 5%;display:flex;align-items:center;justify-content:space-between;">
+    <a href="index.html" aria-label="ReForm Furniture home" style="flex-shrink:0;">
+      <img src="brand_assets/ReForm Furniture.png" alt="ReForm Furniture" style="height:105px;width:auto;" />
+    </a>
+
+    <div id="desk-links" style="display:none;align-items:center;gap:2.75rem;">
+      <a href="inventory.html" class="nav-link nav-current">Browse Inventory</a>
+      <a href="index.html#services" class="nav-link">Our Services</a>
+      <a href="index.html#about"    class="nav-link">About</a>
+      <a href="index.html#contact"  class="nav-link">Contact</a>
+      <button aria-label="Search" style="padding:0.3rem;border:none;background:transparent;cursor:pointer;border-radius:6px;display:flex;align-items:center;color:#5A5D52;transition:background 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.05)'" onmouseout="this.style.background='transparent'">
+        <svg width="19" height="19" viewBox="0 0 19 19" fill="none"><circle cx="8" cy="8" r="5.25" stroke="currentColor" stroke-width="1.55"/><path d="M12 12l3.3 3.3" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <a href="index.html#contact" class="btn-quote" id="nav-quote" style="display:none;">Request a Quote</a>
+      <button id="burger" aria-label="Open menu" aria-expanded="false"
+        style="padding:0.5rem;border-radius:6px;border:none;background:transparent;cursor:pointer;display:none;align-items:center;transition:background 0.2s;"
+        onmouseover="this.style.background='rgba(0,0,0,0.05)'" onmouseout="this.style.background='transparent'">
+        <svg id="burger-open" width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 6h16M3 11h16M3 16h16" stroke="#2A2C26" stroke-width="1.75" stroke-linecap="round"/></svg>
+        <svg id="burger-close" width="22" height="22" viewBox="0 0 22 22" fill="none" style="display:none;"><path d="M5 5l12 12M17 5L5 17" stroke="#2A2C26" stroke-width="1.75" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="mob" style="border-top:1px solid rgba(42,44,38,0.07);">
+    <div style="padding:1.25rem 5%;display:flex;flex-direction:column;gap:1rem;">
+      <a href="inventory.html" class="nav-link" style="font-size:1rem;padding:0.25rem 0;">Browse Inventory</a>
+      <a href="index.html#services" class="nav-link" style="font-size:1rem;padding:0.25rem 0;">Our Services</a>
+      <a href="index.html#about"    class="nav-link" style="font-size:1rem;padding:0.25rem 0;">About</a>
+      <a href="index.html#contact"  class="nav-link" style="font-size:1rem;padding:0.25rem 0;">Contact</a>
+      <a href="index.html#contact" class="btn-quote" style="align-self:flex-start;margin-top:0.5rem;">Request a Quote</a>
+    </div>
+  </div>
+</nav>
+
+<script>
+  (function(){
+    function mq(w){ return window.matchMedia('(min-width:'+w+'px)').matches; }
+    function applyDesk(){
+      document.getElementById('desk-links').style.display = mq(900) ? 'flex'        : 'none';
+      document.getElementById('nav-quote').style.display  = mq(900) ? 'inline-flex' : 'none';
+      document.getElementById('burger').style.display     = mq(900) ? 'none'        : 'flex';
+    }
+    applyDesk(); window.addEventListener('resize', applyDesk);
+  })();
+</script>
+
+
+<!-- ════ PAGE HERO ════ -->
+<section style="background:#F8F5F0;padding:4.5rem 0 3.5rem;border-bottom:1px solid rgba(42,44,38,0.07);">
+  <div style="max-width:1280px;margin:0 auto;padding:0 1.5rem;">
+    <p class="eyebrow reveal" style="margin-bottom:0.875rem;">ReForm Furniture</p>
+    <h1 class="font-display reveal d1" style="font-size:clamp(2.2rem,4vw,3.25rem);font-weight:700;letter-spacing:-0.03em;line-height:1.1;color:#1E2118;margin-bottom:1rem;">
+      Browse Inventory
+    </h1>
+    <p class="reveal d2" style="font-size:1rem;color:#5A5D52;line-height:1.72;max-width:500px;">
+      Commercial office furniture at a fraction of the new price. Same quality, better value.
+    </p>
+  </div>
+</section>
+
+
+<!-- ════ CATEGORY FILTER ════ -->
+<div id="cat-nav" style="background:#fff;border-bottom:1px solid rgba(42,44,38,0.07);position:sticky;z-index:90;">
+  <div style="max-width:1280px;margin:0 auto;padding:0 1.5rem;">
+    <div class="cat-scroll" style="display:flex;align-items:center;gap:0.2rem;overflow-x:auto;padding:0.6rem 0;-webkit-overflow-scrolling:touch;">
+      <button class="cat-filter active" data-cat="all">All Items</button>
+      <button class="cat-filter" data-cat="chairs">Chairs</button>
+      <button class="cat-filter" data-cat="desks">Desks</button>
+      <button class="cat-filter" data-cat="workstations">Workstations</button>
+      <button class="cat-filter" data-cat="storage">Storage</button>
+      <button class="cat-filter" data-cat="boardroom">Boardroom</button>
+      <button class="cat-filter" data-cat="lounge">Lounge</button>
+      <button class="cat-filter" data-cat="accessories">Accessories</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════ PRODUCT GRID ════ -->
+<section style="padding:2.75rem 0 6rem;">
+  <div style="max-width:1280px;margin:0 auto;padding:0 1.5rem;">
+
+    <div style="margin-bottom:1.75rem;">
+      <span id="result-count" style="font-size:0.875rem;color:#5A5D52;"></span>
+    </div>
+
+    <div id="product-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.75rem;"></div>
+
+    <div id="empty-state" style="display:none;text-align:center;padding:5rem 0;">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style="margin:0 auto 1.25rem;opacity:0.35;"><rect x="7" y="13" width="30" height="24" rx="3" stroke="#2A2C26" stroke-width="1.6"/><path d="M15 13v-2a7 7 0 0114 0v2" stroke="#2A2C26" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <p class="font-display" style="font-size:1.15rem;font-weight:600;color:#2A2C26;margin-bottom:0.5rem;">No items in this category</p>
+      <p style="font-size:0.875rem;color:#5A5D52;">Check back soon or browse another category.</p>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ════ PRODUCT DETAIL MODAL ════ -->
+<div id="detail-modal" style="display:none;" role="dialog" aria-modal="true">
+  <div class="modal-bg" id="detail-bg">
+    <div class="detail-panel" id="detail-panel">
+
+      <!-- Sticky close bar -->
+      <div style="position:sticky;top:0;z-index:5;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid rgba(42,44,38,0.07);">
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A9D92;">Product Details</span>
+        <button id="detail-close" aria-label="Close"
+          style="width:34px;height:34px;border-radius:50%;background:rgba(42,44,38,0.07);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;"
+          onmouseover="this.style.background='rgba(42,44,38,0.14)'" onmouseout="this.style.background='rgba(42,44,38,0.07)'">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="#2A2C26" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Two-column layout -->
+      <div class="detail-two-col" style="display:flex;">
+
+        <!-- Image column -->
+        <div class="detail-img-col" style="width:42%;flex-shrink:0;background:#EDE7DB;min-height:360px;">
+          <img id="detail-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:block;min-height:360px;" />
+        </div>
+
+        <!-- Info column -->
+        <div style="flex:1;padding:2.25rem 2rem;overflow-y:auto;">
+          <p id="detail-brand" class="eyebrow" style="margin-bottom:0.5rem;"></p>
+          <h2 id="detail-name" class="font-display" style="font-size:1.55rem;font-weight:700;color:#1E2118;letter-spacing:-0.025em;line-height:1.18;margin-bottom:0.875rem;"></h2>
+          <span id="detail-cond" style="display:inline-block;font-size:0.68rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;padding:0.28rem 0.7rem;border-radius:4px;margin-bottom:1.5rem;"></span>
+
+          <p id="detail-desc" style="font-size:0.9rem;color:#5A5D52;line-height:1.78;margin-bottom:1.75rem;"></p>
+
+          <div style="margin-bottom:1.75rem;">
+            <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#2A2C26;margin-bottom:0.875rem;">Features</p>
+            <ul id="detail-features" style="list-style:none;padding:0;display:flex;flex-direction:column;gap:0.5rem;"></ul>
+          </div>
+
+          <div style="background:#F8F5F0;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.75rem;">
+            <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#2A2C26;margin-bottom:0.4rem;">Condition Notes</p>
+            <p id="detail-cond-note" style="font-size:0.85rem;color:#5A5D52;line-height:1.7;"></p>
+          </div>
+
+          <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:2rem;">
+            <div>
+              <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9A9D92;margin-bottom:0.25rem;">Availability</p>
+              <p id="detail-avail" style="font-size:0.875rem;font-weight:600;color:#2A2C26;"></p>
+            </div>
+            <div>
+              <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9A9D92;margin-bottom:0.25rem;">Delivery</p>
+              <p style="font-size:0.875rem;color:#5A5D52;">Local Winnipeg delivery available</p>
+            </div>
+          </div>
+
+          <button id="detail-quote-btn" class="btn-sage" style="width:100%;justify-content:center;padding:0.875rem 1.75rem;font-size:0.875rem;">
+            Request a Quote
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5h10M6.5 1.5l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ════ QUOTE MODAL ════ -->
+<div id="quote-modal" style="display:none;" role="dialog" aria-modal="true">
+  <div class="modal-bg" id="quote-bg">
+    <div class="quote-panel">
+
+      <div style="padding:1.75rem 2rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.07);position:relative;">
+        <button id="quote-close" aria-label="Close"
+          style="position:absolute;top:1.1rem;right:1.1rem;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2l-9 9" stroke="rgba(255,255,255,0.65)" stroke-width="1.55" stroke-linecap="round"/></svg>
+        </button>
+        <p class="eyebrow" style="color:#8A9970;margin-bottom:0.5rem;">ReForm Furniture</p>
+        <h3 class="font-display" style="font-size:1.35rem;font-weight:700;color:#fff;letter-spacing:-0.02em;">Request a Quote</h3>
+        <div id="quote-context" style="display:none;margin-top:0.875rem;padding:0.7rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;">
+          <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:0.2rem;">Enquiring about</p>
+          <p id="quote-product-name" style="font-size:0.875rem;color:rgba(255,255,255,0.78);font-weight:500;"></p>
+        </div>
+      </div>
+
+      <div id="quote-form-wrap" style="padding:1.5rem 2rem 2rem;">
+        <form id="quote-form" style="display:flex;flex-direction:column;gap:1rem;" onsubmit="submitQuote(event)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.875rem;">
+            <div>
+              <label style="display:block;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:0.4rem;">First Name</label>
+              <input type="text" class="field" placeholder="Jane" required />
+            </div>
+            <div>
+              <label style="display:block;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:0.4rem;">Last Name</label>
+              <input type="text" class="field" placeholder="Smith" required />
+            </div>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:0.4rem;">Email</label>
+            <input type="email" class="field" placeholder="jane@company.com" required />
+          </div>
+          <div>
+            <label style="display:block;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:0.4rem;">Phone <span style="opacity:0.45;font-weight:400;">(optional)</span></label>
+            <input type="tel" class="field" placeholder="(204) 000-0000" />
+          </div>
+          <div>
+            <label style="display:block;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:0.4rem;">Message</label>
+            <textarea class="field" rows="3" placeholder="Quantities needed, timeline, questions..."></textarea>
+          </div>
+          <button type="submit" class="btn-sage" style="width:100%;justify-content:center;padding:0.875rem;margin-top:0.25rem;">
+            Send Request
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5h10M6.5 1.5l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+      </div>
+
+      <div id="quote-success" style="display:none;padding:3rem 2rem;text-align:center;">
+        <div style="width:52px;height:52px;background:rgba(109,123,88,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4.5 12l4 4 9-9" stroke="#6D7B58" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3 class="font-display" style="font-size:1.25rem;font-weight:700;color:#fff;letter-spacing:-0.02em;margin-bottom:0.625rem;">Request Received</h3>
+        <p style="font-size:0.875rem;color:rgba(255,255,255,0.5);line-height:1.7;max-width:280px;margin:0 auto 1.75rem;">We will be in touch shortly with pricing and availability information.</p>
+        <button onclick="closeQuote()" class="btn-sage" style="margin:0 auto;">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ════ FOOTER ════ -->
+<footer style="background:#161810;padding:3.5rem 0 2rem;">
+  <div style="max-width:1280px;margin:0 auto;padding:0 1.5rem;">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:3rem;margin-bottom:3rem;" id="footer-grid">
+      <div>
+        <img src="brand_assets/ReForm Furniture.png" alt="ReForm Furniture" style="height:34px;width:auto;margin-bottom:1.25rem;filter:brightness(0) invert(1);opacity:0.8;" />
+        <p style="font-size:0.875rem;color:rgba(255,255,255,0.4);line-height:1.78;max-width:300px;">Winnipeg's source for quality pre-owned commercial office furniture. Save more, waste less, work better.</p>
+      </div>
+      <div>
+        <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:1.1rem;">Navigation</div>
+        <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:0.65rem;">
+          <li><a href="inventory.html"      style="font-size:0.875rem;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#8A9970'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">Browse Inventory</a></li>
+          <li><a href="index.html#services" style="font-size:0.875rem;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#8A9970'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">Our Services</a></li>
+          <li><a href="index.html#about"    style="font-size:0.875rem;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#8A9970'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">About</a></li>
+          <li><a href="index.html#contact"  style="font-size:0.875rem;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#8A9970'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:1.1rem;">Contact</div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;">
+          <div style="font-size:0.875rem;color:rgba(255,255,255,0.5);">Winnipeg, MB</div>
+          <a href="tel:+12045550123"           style="font-size:0.875rem;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#8A9970'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">(204) 555-0123</a>
+          <a href="mailto:info@reformfurniture.ca" style="font-size:0.875rem;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#8A9970'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">info@reformfurniture.ca</a>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;">
+      <div style="font-size:0.775rem;color:rgba(255,255,255,0.25);">© 2026 ReForm Furniture. All rights reserved. Winnipeg, MB.</div>
+      <div style="font-size:0.775rem;color:rgba(255,255,255,0.25);">Pre-owned office furniture specialists</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    const g = document.getElementById('footer-grid');
+    function fix(){
+      const w = window.innerWidth;
+      if(w < 640)      g.style.gridTemplateColumns = '1fr';
+      else if(w < 900) g.style.gridTemplateColumns = '1fr 1fr';
+      else             g.style.gridTemplateColumns = '2fr 1fr 1fr';
+    }
+    fix(); window.addEventListener('resize', fix);
+  })();
+</script>
+
+
+<!-- ════ MAIN SCRIPT ════ -->
+<script>
+
+const PRODUCTS = [
+  // ── Chairs ────────────────────────────────────────────────────────────────
+  {
+    id:1, category:'chairs', brand:'Global', name:'Granada Task Chair with Schukra Lumbar',
+    desc:'Commercial ergonomic task chair with Global\'s Schukra adjustable lumbar support system. Widely used across corporate environments for full-day seated comfort.',
+    features:['Schukra adjustable lumbar support','Adjustable seat height and depth','Height-adjustable armrests','Tilt tension and lock mechanism','Five-star base with smooth-rolling casters'],
+    condition:'Very Good',
+    conditionNote:'Very good pre-owned condition. Upholstery is clean with minor wear consistent with professional office use. All adjustment mechanisms fully functional.',
+    colors:[
+      {label:'Green', swatch:'#8a9970', img:'https://placehold.co/800x600/8a9970/4e5940?text=Global+Granada', available:8},
+    ],
+  },
+  {
+    id:2, category:'chairs', brand:'Global', name:'Tritek Ergo High-Back Task Chair',
+    desc:'High-back ergonomic task chair from Global\'s Tritek series, built for commercial offices requiring full-day support and reliable adjustability.',
+    features:['High-back upholstered support','Adjustable lumbar','Multi-function tilt mechanism','Height-adjustable arms','Commercial five-star base'],
+    condition:'Very Good',
+    conditionNote:'Very good pre-owned condition. Upholstery is clean and intact. All mechanical adjustments operate correctly.',
+    colors:[
+      {label:'Green', swatch:'#8a9970', img:'https://placehold.co/800x600/8a9970/4e5940?text=Global+Tritek', available:1},
+      {label:'Black', swatch:'#3d3d3d', img:'https://placehold.co/800x600/3d3d3d/1a1a1a?text=Global+Tritek', available:1},
+    ],
+  },
+  {
+    id:4, category:'chairs', brand:'Global', name:'Granada Task Chair',
+    desc:'Commercial task chair from Global\'s Granada series. A practical, adjustable option well-suited to general office use.',
+    features:['Adjustable seat height and depth','Tilt tension and lock','Height-adjustable armrests','Five-star base with casters','Durable commercial upholstery'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Light wear on seat and armrests consistent with regular professional use. All adjustments functional.',
+    colors:[
+      {label:'Light Blue',    swatch:'#a8c4d0', img:'https://placehold.co/800x600/a8c4d0/506878?text=Granada', available:3},
+      {label:'Burgundy',      swatch:'#a05068', img:'https://placehold.co/800x600/a05068/6a3048?text=Granada', available:2},
+      {label:'Dark Grey',     swatch:'#606060', img:'https://placehold.co/800x600/606060/404040?text=Granada', available:2},
+      {label:'Green Leaflet', swatch:'#7a9060', img:'https://placehold.co/800x600/7a9060/4a6038?text=Granada', available:1},
+    ],
+  },
+  {
+    id:6, category:'chairs', brand:'Global', name:'Granada Low-Back Task Chair',
+    desc:'Low-back commercial task chair from Global\'s Granada series with a perforated seat and back for added breathability.',
+    features:['Low-back ergonomic design','Perforated upholstery for breathability','Adjustable seat height','Tilt mechanism with lock','Five-star base with casters'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Upholstery has light wear consistent with regular professional use. All mechanisms functional.',
+    colors:[
+      {label:'Navy', swatch:'#405878', img:'https://placehold.co/800x600/405878/283850?text=Granada+Navy', available:1},
+    ],
+  },
+  {
+    id:9, category:'chairs', brand:'Global', name:'Reception Chair',
+    desc:'Commercial reception chair from Global, suitable for waiting areas, reception zones, and informal meeting spaces.',
+    features:['Upholstered seat and back','Suited for reception and lounge areas','Fixed height design','Solid base construction','Contract-grade fabric'],
+    condition:'Very Good',
+    conditionNote:'Very good pre-owned condition. Upholstery is clean and intact with no significant wear. Structure solid throughout.',
+    colors:[
+      {label:'Purple', swatch:'#7060a0', img:'https://placehold.co/800x600/7060a0/503878?text=Global+Reception', available:4},
+    ],
+  },
+  {
+    id:10, category:'chairs', brand:'Ergocentric', name:'tCentric Hybrid Mesh Task Chair',
+    desc:'High-performance ergonomic task chair from Ergocentric featuring a breathable mesh back and upholstered seat. Built for intensive commercial use with full adjustability.',
+    features:['Breathable mesh back panel','Upholstered contoured seat','Adjustable lumbar support','Multi-function tilt with seat depth adjustment','Height and pivot-adjustable armrests'],
+    condition:'Very Good',
+    conditionNote:'Very good pre-owned condition. Mesh is intact with no damage. Seat upholstery clean and in good shape. All mechanisms tested and fully functional.',
+    colors:[
+      {label:'Black', swatch:'#3d3d3d', img:'https://placehold.co/800x600/404040/282828?text=tCentric+Hybrid', available:1},
+    ],
+  },
+  {
+    id:11, category:'chairs', brand:'Teknion', name:'Savera High-Back Task Chair',
+    desc:'High-back ergonomic task chair from Teknion\'s Savera series, designed for professional office environments with full adjustability and a clean commercial aesthetic.',
+    features:['High-back upholstered support','Adjustable lumbar and seat height','Multi-function tilt mechanism','Height-adjustable armrests','Commercial five-star base'],
+    condition:'Very Good',
+    conditionNote:'Very good pre-owned condition. Upholstery clean and intact. All adjustments operate smoothly and correctly.',
+    colors:[
+      {label:'Green', swatch:'#8a9970', img:'https://placehold.co/800x600/7a9060/4e5940?text=Teknion+Savera', available:1},
+    ],
+  },
+  {
+    id:12, category:'chairs', brand:'All Seating', name:'Chiroform Task Chair',
+    desc:'Commercial ergonomic task chair from All Seating\'s Chiroform line, designed for full-day professional use with built-in lumbar support.',
+    features:['Built-in chiropractic lumbar support','Adjustable seat height and tilt','Height-adjustable arms','Five-star base with casters','Durable commercial upholstery'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Upholstery shows light wear from professional use. All mechanisms functional.',
+    colors:[
+      {label:'Black', swatch:'#3d3d3d', img:'https://placehold.co/800x600/404040/282828?text=Chiroform', available:1},
+    ],
+  },
+  {
+    id:13, category:'chairs', brand:'All Seating', name:'Fluid Task Mesh Chair',
+    desc:'Mesh-back commercial task chair from All Seating\'s Fluid line. A breathable, adjustable option for general professional use.',
+    features:['Breathable mesh back','Patterned fabric seat','Adjustable seat height','Tilt mechanism with tension control','Five-star base with casters'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Mesh and upholstery are intact. Light wear on seat consistent with regular office use. All adjustments functional.',
+    colors:[
+      {label:'Black Pattern', swatch:'#484848', img:'https://placehold.co/800x600/484848/2a2a2a?text=Fluid+Task+Mesh', available:2},
+    ],
+  },
+  {
+    id:14, category:'chairs', brand:'VXO', name:'Task Chair',
+    desc:'Commercial task chair from VXO, suited to general professional office use.',
+    features:['Adjustable seat height','Tilt mechanism','Armrests','Five-star base with casters','Commercial upholstery'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Shows normal wear from regular professional use. All basic adjustments operational.',
+    colors:[
+      {label:'Black', swatch:'#3d3d3d', img:'https://placehold.co/800x600/404040/282828?text=VXO+Task+Chair', available:1},
+    ],
+  },
+  {
+    id:15, category:'chairs', brand:'Commercial', name:'High-Back Leather Task Chair',
+    desc:'High-back executive-style task chair with leather upholstery, suitable for private office or boardroom use. Brand unconfirmed.',
+    features:['High-back leather upholstery','Adjustable seat height','Tilt mechanism with lock','Armrests included','Five-star base with casters'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Leather shows light wear consistent with regular professional use. All adjustments functional.',
+    colors:[
+      {label:'Black', swatch:'#2a2a2a', img:'https://placehold.co/800x600/303030/181818?text=Leather+High-Back', available:1},
+    ],
+  },
+  {
+    id:16, category:'chairs', brand:'Teknion', name:'Projek Task Chair',
+    desc:'Contemporary task chair developed in collaboration with Orangebox. A refined, adjustable option for professional environments with a clean modern aesthetic.',
+    features:['Contoured back support','Adjustable seat height and depth','Tilt tension and recline','Height-adjustable armrests','Compact commercial footprint'],
+    condition:'Very Good',
+    conditionNote:'Very good pre-owned condition. Upholstery is clean and intact. All mechanisms operate smoothly. Minimal wear visible.',
+    colors:[
+      {label:'Blue', swatch:'#4060a0', img:'https://placehold.co/800x600/4060a0/283868?text=Projek', available:1},
+    ],
+  },
+  {
+    id:17, category:'chairs', brand:'Ergocentric', name:'Inflatable Lumbar Task Chair',
+    desc:'Commercial task chair with an inflatable lumbar support system from Ergocentric, offering adjustable back support for a range of body types.',
+    features:['Inflatable lumbar support','Hand pump included','Adjustable seat height','Tilt mechanism','Five-star base with casters'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Upholstery is intact with light wear. Lumbar inflation mechanism functional. All adjustments operational.',
+    colors:[
+      {label:'Red', swatch:'#a04040', img:'https://placehold.co/800x600/a04040/702828?text=Ergocentric+Lumbar', available:2},
+    ],
+  },
+  {
+    id:18, category:'chairs', brand:'Ergocentric', name:'Basic Ergonomic Task Chair',
+    desc:'Entry-level ergonomic task chair from Ergocentric, built for commercial use with basic adjustability and practical durability.',
+    features:['Adjustable seat height','Tilt tension control','Armrests','Five-star base with casters','Commercial-grade upholstery'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Shows light wear from regular professional use. All basic adjustments functional.',
+    colors:[
+      {label:'Red', swatch:'#a04040', img:'https://placehold.co/800x600/a04040/702828?text=Ergocentric+Basic', available:2},
+    ],
+  },
+  {
+    id:19, category:'chairs', brand:'Supreme', name:'Basic Ergonomic Task Chair',
+    desc:'Commercial task chair from Supreme with an ergonomic seat design intended for everyday professional use.',
+    features:['Ergonomic seat contour','Adjustable seat height','Tilt mechanism','Armrests','Five-star base with casters'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Upholstery has light wear consistent with regular professional use. All adjustments functional.',
+    colors:[
+      {label:'Grey Pattern', swatch:'#888888', img:'https://placehold.co/800x600/888888/585858?text=Supreme+Ergonomic', available:2},
+    ],
+  },
+  {
+    id:20, category:'chairs', brand:'Commercial', name:'Mesh Task Chair',
+    desc:'Commercial mesh-back task chair. A practical, breathable option for general office use. Brand unconfirmed.',
+    features:['Mesh back for breathability','Adjustable seat height','Tilt mechanism','Armrests','Five-star base with casters'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Mesh intact with no tears. Light wear on seat consistent with regular office use. All adjustments functional.',
+    colors:[
+      {label:'Black', swatch:'#3d3d3d', img:'https://placehold.co/800x600/484848/282828?text=Mesh+Task+Chair', available:3},
+    ],
+  },
+  {
+    id:21, category:'chairs', brand:'Commercial', name:'Reception Chair',
+    desc:'Commercial reception chair for waiting areas and informal seating. Brand unconfirmed.',
+    features:['Upholstered seat and back','Suited for reception and lounge areas','Fixed height design','Solid base construction','Contract-grade fabric'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Upholstery has light wear consistent with professional use. Structure solid throughout.',
+    colors:[
+      {label:'Blue', swatch:'#4060a0', img:'https://placehold.co/800x600/4060a0/283868?text=Reception+Chair', available:1},
+    ],
+  },
+  {
+    id:22, category:'chairs', brand:'Global', name:'Drafting Chair',
+    desc:'Commercial drafting chair from Global, designed for elevated work surfaces and standing-height desks. Includes a foot ring for comfortable positioning at height.',
+    features:['Extended height range for drafting use','Foot ring for elevated seating','Adjustable seat height and tilt','Armrests','Five-star base with casters'],
+    condition:'Very Good',
+    conditionNote:'Very good pre-owned condition. Upholstery is clean with minimal wear. Height mechanism operates smoothly. Foot ring intact and undamaged.',
+    colors:[
+      {label:'Grey', swatch:'#888888', img:'https://placehold.co/800x600/888888/585858?text=Global+Drafting', available:1},
+    ],
+  },
+  {
+    id:23, category:'chairs', brand:'Steelcase', name:'Sensor Task Chair',
+    desc:'A classic commercial task chair from Steelcase\'s Sensor line, known for reliable ergonomic support and durable construction suited to long-term professional use.',
+    features:['Adjustable lumbar support','Seat height and depth adjustment','Armrests','Multi-function tilt mechanism','Durable five-star base'],
+    condition:'Good',
+    conditionNote:'Good pre-owned condition. Upholstery has light wear consistent with regular professional use. All mechanisms tested and functional.',
+    colors:[
+      {label:'Light Green', swatch:'#a0b890', img:'https://placehold.co/800x600/a0b890/6a7e60?text=Steelcase+Sensor', available:1},
+    ],
+  },
+];
+
+
+// ── State ──
+let activeCategory = 'all';
+let activeDetailId = null;
+
+// ── Sticky filter top ──
+function setStickyTop() {
+  const navH = document.querySelector('.sticky-nav').offsetHeight;
+  document.getElementById('cat-nav').style.top = navH + 'px';
+}
+setStickyTop();
+window.addEventListener('resize', setStickyTop);
+
+// ── Grid columns ──
+const grid = document.getElementById('product-grid');
+function setGridCols() {
+  const w = window.innerWidth;
+  grid.style.gridTemplateColumns = w < 640 ? '1fr' : w < 1024 ? 'repeat(2,1fr)' : 'repeat(3,1fr)';
+}
+setGridCols();
+window.addEventListener('resize', setGridCols);
+
+// ── Condition CSS class ──
+function condClass(c) {
+  return 'cond-' + c.replace(' ', '-');
+}
+
+// ── Render grid ──
+function renderProducts() {
+  const filtered = activeCategory === 'all'
+    ? PRODUCTS
+    : PRODUCTS.filter(p => p.category === activeCategory);
+
+  document.getElementById('result-count').textContent =
+    filtered.length === 1 ? '1 item' : filtered.length + ' items';
+
+  const empty = document.getElementById('empty-state');
+  if (filtered.length === 0) {
+    grid.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  grid.style.display = 'grid';
+  empty.style.display = 'none';
+  grid.innerHTML = '';
+
+  filtered.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'inv-card';
+    card.setAttribute('tabindex', '0');
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(14px)';
+
+    const isColored = Array.isArray(p.colors);
+    const defaultColor = isColored ? p.colors[0] : null;
+    const cardImg = isColored ? defaultColor.img : p.img;
+
+    const swatchesHtml = isColored ? `
+      <div style="margin-bottom:1.1rem;">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
+          ${p.colors.map((c, ci) =>
+            `<button class="color-swatch${ci===0?' swatch-active':''}" data-ci="${ci}" title="${c.label}"
+              style="width:18px;height:18px;border-radius:50%;background:${c.swatch};
+              border:2px solid ${ci===0?'#1E2118':'transparent'};
+              padding:0;cursor:pointer;outline:none;flex-shrink:0;
+              transition:border-color 0.15s ease,transform 0.15s ease;"></button>`
+          ).join('')}
+        </div>
+        <span class="color-qty-label" style="font-size:0.76rem;color:#5A5D52;">${defaultColor.label} · ${defaultColor.available} available</span>
+      </div>` : '';
+
+    card.innerHTML = `
+      <div style="overflow:hidden;background:#EDE7DB;">
+        <img class="inv-card-img" src="${cardImg}" alt="${p.name}" loading="lazy" />
+      </div>
+      <div style="padding:1.4rem 1.5rem 1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.45rem;">
+          <span style="font-size:0.67rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5A5D52;">${p.brand}</span>
+          <span class="${condClass(p.condition)}" style="font-size:0.63rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:0.22rem 0.6rem;border-radius:4px;">${p.condition}</span>
+        </div>
+        <h3 style="font-family:'Playfair Display',Georgia,serif;font-size:1.1rem;font-weight:700;color:#1E2118;letter-spacing:-0.02em;line-height:1.25;margin-bottom:0.55rem;">${p.name}</h3>
+        <p style="font-size:0.84rem;color:#5A5D52;line-height:1.65;margin-bottom:${isColored?'0.85rem':'1.25rem'};display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.desc}</p>
+        ${swatchesHtml}
+        <div style="display:flex;gap:0.625rem;">
+          <button class="btn-sage" data-quote="${p.id}" style="flex:1;justify-content:center;padding:0.58rem 0.75rem;font-size:0.8rem;">Request a Quote</button>
+          <button class="btn-ghost" data-detail="${p.id}" style="padding:0.58rem 0.9rem;font-size:0.8rem;">Details</button>
+        </div>
+      </div>
+    `;
+
+    grid.appendChild(card);
+
+    if (isColored) {
+      const swatches = card.querySelectorAll('.color-swatch');
+      const qtyLabel = card.querySelector('.color-qty-label');
+      const imgEl = card.querySelector('.inv-card-img');
+      const quoteBtn = card.querySelector('[data-quote]');
+
+      swatches.forEach((sw, ci) => {
+        sw.addEventListener('click', () => {
+          swatches.forEach(s => { s.classList.remove('swatch-active'); s.style.borderColor = 'transparent'; });
+          sw.classList.add('swatch-active');
+          sw.style.borderColor = '#1E2118';
+          const col = p.colors[ci];
+          qtyLabel.textContent = col.label + ' · ' + col.available + ' available';
+          imgEl.src = col.img;
+          quoteBtn.dataset.selectedColor = col.label;
+        });
+        sw.addEventListener('mouseenter', () => { if (!sw.classList.contains('swatch-active')) sw.style.transform = 'scale(1.25)'; });
+        sw.addEventListener('mouseleave', () => { sw.style.transform = 'scale(1)'; });
+      });
+    }
+
+    setTimeout(() => {
+      card.style.transition = 'opacity 0.45s cubic-bezier(0.34,1.2,0.64,1), transform 0.45s cubic-bezier(0.34,1.2,0.64,1), box-shadow 0.22s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, i * 55);
+
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(p.id); }
+    });
+  });
+}
+
+// ── Event delegation for card buttons ──
+grid.addEventListener('click', e => {
+  const qBtn = e.target.closest('[data-quote]');
+  const dBtn = e.target.closest('[data-detail]');
+  if (qBtn) {
+    const p = PRODUCTS.find(x => x.id === +qBtn.dataset.quote);
+    const colorNote = qBtn.dataset.selectedColor ? ' (' + qBtn.dataset.selectedColor + ')' : '';
+    openQuote(p.name + colorNote);
+  }
+  else if (dBtn) { openDetail(+dBtn.dataset.detail); }
+});
+
+// ── Category filter ──
+document.querySelectorAll('.cat-filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeCategory = btn.dataset.cat;
+    document.querySelectorAll('.cat-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderProducts();
+  });
+});
+
+// ── Detail modal ──
+function openDetail(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  activeDetailId = id;
+
+  document.getElementById('detail-img').src = p.img || (p.colors && p.colors[0].img) || '';
+  document.getElementById('detail-img').alt = p.name;
+  document.getElementById('detail-brand').textContent = p.brand;
+  document.getElementById('detail-name').textContent = p.name;
+
+  const condEl = document.getElementById('detail-cond');
+  condEl.textContent = p.condition + ' condition';
+  condEl.className = condClass(p.condition);
+  condEl.style.cssText = `display:inline-block;font-size:0.68rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;padding:0.28rem 0.7rem;border-radius:4px;margin-bottom:1.5rem;`;
+
+  document.getElementById('detail-desc').textContent = p.desc;
+
+  document.getElementById('detail-features').innerHTML = p.features.map(f => `
+    <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.85rem;color:#5A5D52;line-height:1.55;">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;margin-top:0.18rem;"><path d="M2.5 7.5l3 3 6-6" stroke="#6D7B58" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      ${f}
+    </li>
+  `).join('');
+
+  document.getElementById('detail-cond-note').textContent = p.conditionNote;
+  const totalAvail = p.colors
+    ? p.colors.reduce((sum, c) => sum + c.available, 0)
+    : p.available;
+  document.getElementById('detail-avail').textContent =
+    totalAvail === 1 ? '1 unit available' : totalAvail + ' units available';
+
+  document.getElementById('detail-quote-btn').onclick = () => { closeDetail(); openQuote(p.name); };
+
+  const panel = document.getElementById('detail-panel');
+  panel.scrollTop = 0;
+  document.getElementById('detail-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  document.getElementById('detail-close').focus();
+}
+
+function closeDetail() {
+  document.getElementById('detail-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  activeDetailId = null;
+}
+
+document.getElementById('detail-close').addEventListener('click', closeDetail);
+document.getElementById('detail-bg').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeDetail();
+});
+
+// ── Quote modal ──
+function openQuote(productName) {
+  const ctx = document.getElementById('quote-context');
+  if (productName) {
+    document.getElementById('quote-product-name').textContent = productName;
+    ctx.style.display = 'block';
+  } else {
+    ctx.style.display = 'none';
+  }
+  document.getElementById('quote-form-wrap').style.display = 'block';
+  document.getElementById('quote-success').style.display = 'none';
+  document.getElementById('quote-form').reset();
+  document.getElementById('quote-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  document.getElementById('quote-close').focus();
+}
+
+function closeQuote() {
+  document.getElementById('quote-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function submitQuote(e) {
+  e.preventDefault();
+  document.getElementById('quote-form-wrap').style.display = 'none';
+  document.getElementById('quote-success').style.display = 'block';
+}
+
+document.getElementById('quote-close').addEventListener('click', closeQuote);
+document.getElementById('quote-bg').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeQuote();
+});
+
+// ── Escape key ──
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('quote-modal').style.display !== 'none') closeQuote();
+  else if (document.getElementById('detail-modal').style.display !== 'none') closeDetail();
+});
+
+// ── Burger nav ──
+const burger = document.getElementById('burger');
+const mob    = document.getElementById('mob');
+const bOpen  = document.getElementById('burger-open');
+const bClose = document.getElementById('burger-close');
+burger.addEventListener('click', () => {
+  const open = mob.classList.toggle('open');
+  burger.setAttribute('aria-expanded', open);
+  bOpen.style.display  = open ? 'none'  : 'block';
+  bClose.style.display = open ? 'block' : 'none';
+});
+mob.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  mob.classList.remove('open');
+  burger.setAttribute('aria-expanded', 'false');
+  bOpen.style.display  = 'block';
+  bClose.style.display = 'none';
+}));
+
+// ── Scroll reveal (hero) ──
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('vis'); io.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+// ── Init: apply category from URL param if present ──
+(function(){
+  const cat = new URLSearchParams(window.location.search).get('cat');
+  if (cat && cat !== 'all') {
+    const btn = document.querySelector(`.cat-filter[data-cat="${cat}"]`);
+    if (btn) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      btn.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+  }
+})();
+
+renderProducts();
+
+</script>
+</body>
+</html>
